@@ -7,6 +7,7 @@ Drag and Drop Application to view File Hash Information<br>
 
 ## Right-Click Context Menu Option
 Right-Click Context Menu Option to Lauch the app and automatically load the information<br>
+![Right-Click Context Menu](/Images/Application_GFHI_ContextMenu_Example.png)
 
 ### Install the Context Menu Option
 Install the Context Menu Option from the menu bar<br>
@@ -22,4 +23,4 @@ If the file is currently being used by another process, you will receive the bel
 
 ## Do Not Run as Admin
 The Drag and Drop events will not work when ran as administrator. Run the script without elevated Priveledges.<br>
- ![Invoke MSI Application](/Images/Application_Example_RunAsAdmin.png)
+ ![Invoke MSI Application](/Images/Application_GFHI_Example_RunAsAdmin.png)
