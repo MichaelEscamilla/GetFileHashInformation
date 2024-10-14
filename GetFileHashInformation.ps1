@@ -1,24 +1,22 @@
 <#
 .SYNOPSIS
-This script provides a graphical user interface (GUI) for viewing and copying properties of MSI files.
+This script provides a graphical user interface (GUI) for viewing and copying File Hash Information of files.
 
 .DESCRIPTION
-The script creates a WPF-based GUI that allows users to drag and drop MSI files to view their properties such as Product Name, Manufacturer, Product Version, Product Code, and Upgrade Code.
+The script creates a WPF-based GUI that allows users to drag and drop files to view their File Hash Information.
+The script supports MD5, SHA1, and SHA256 hash algorithms.
 It also provides functionality to copy these properties to the clipboard and to clear the displayed information.
-Additionally, the script includes options to install and uninstall a context menu item for MSI files to retrieve their properties.
+Additionally, the script includes options to install and uninstall a context menu item for files to retrieve their properties.
 
 .PARAMETER FilePath
-Optional parameter to specify the path of the MSI file to automatically load the information for.
+Optional parameter to specify the path of the file to automatically load the information for.
 
 .NOTES
 Author: Michael Escamilla
-Date: 9-30-2024
+Date: 10-13-2024
 
 Version History:
-1.0.0.0     - Initial release
-2.0.0.0     - 10-4-2024 - Added file hash information, and context menu items for the installation and uninstallation of a Right-Click Option in Windows Explorer. And some other UI improvements.
-2024.10.4.1 - Updated the version numbering, and a sepearator in the context menu.
-2024-10.13.0- Added an error message when the file is locked
+2024-10.13.0- Initial release of the GetFileHashInformation.ps1 script.
 #>
 
 param (
@@ -30,11 +28,11 @@ param (
 ################# Variables #################
 #############################################
 # Script Name
-$Global:ScriptName = "GetMSIInformation.ps1"
+$Global:ScriptName = "GetFileHashInformation.ps1"
 # Script Version
 [System.Version]$Global:ScriptVersion = "2024.10.13.0"
 # Right-Click Menu Name
-$Global:RightClickMenuName = "Get MSI Information"
+$Global:RightClickMenuName = "Get File Hash Information"
 # Get the Security Principal
 $Global:currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 
@@ -57,54 +55,6 @@ function Test-FileLock {
   catch {
     return $true
   }
-}
-
-function Get-MsiProperties {
-  param (
-    [Parameter(Mandatory = $true)]
-    [IO.FileInfo[]]$Path
-  )
-	
-  # Check if the MSI file path exists
-  if (-not (Test-Path $Path)) {
-    throw "The file $Path does not exist."
-  }
-	
-  # Create a new Windows Installer COM object
-  $WindowsInstaller = New-Object -ComObject WindowsInstaller.Installer
-	
-  # Open the MSI database in read-only mode
-  $MSIDatabase = $WindowsInstaller.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $WindowsInstaller, @($Path.FullName, 0))
-	
-  # Open a view on the Property table
-  $MSIPropertyView = $MSIDatabase.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $MSIDatabase, @("SELECT * FROM Property"))
-	
-  # Execute the view query
-  $MSIPropertyView.GetType().InvokeMember("Execute", "InvokeMethod", $null, $MSIPropertyView, $null)
-	
-  # Fetch the first record from the result set
-  $MSIRecord = $MSIPropertyView.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $MSIPropertyView, $null)
-	
-  # Initialize an empty System Object to store properties
-  [System.Object]$Properties = @{}
-	
-  # Loop through all records in the result set
-  while ($null -ne $MSIRecord) {
-    # Get the property name from the first column
-    $property = $MSIRecord.GetType().InvokeMember("StringData", "GetProperty", $null, $MSIRecord, @(1))
-			
-    # Get the property value from the second column
-    $Value = $MSIRecord.GetType().InvokeMember("StringData", "GetProperty", $null, $MSIRecord, @(2))
-			
-    # Add the property name and value to the hashtable
-    $Properties[$Property] = $Value
-			
-    # Fetch the next record from the result set
-    $MSIRecord = $MSIPropertyView.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $MSIPropertyView, $null)
-  }
-	
-  # Return the System Object of properties
-  $Properties
 }
 
 function Enable-AllButtons {
@@ -181,17 +131,8 @@ function Get-FileHashInformation {
 function Set-TextboxInformation {
   param (
     [Parameter(Mandatory = $true)]
-    [System.Object]$MSIPropertiesInfo,
-    [Parameter(Mandatory = $true)]
     [hashtable]$FileHashInfo
   )
-
-  # Set the MSI file properties textboxes
-  $txt_ProductName.Text = $MSIPropertiesInfo.ProductName
-  $txt_Manufacture.Text = $MSIPropertiesInfo.Manufacturer
-  $txt_ProductVersion.Text = $MSIPropertiesInfo.ProductVersion
-  $txt_ProductCode.Text = $MSIPropertiesInfo.ProductCode
-  $txt_UpgradeCode.Text = $MSIPropertiesInfo.UpgradeCode
 
   # Set the File Hash Information textboxes
   $txt_MD5.Text = $FileHashInfo.MD5.Hash
@@ -210,15 +151,15 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Windows.Forms
 
 # Build the GUI
-[xml]$XAMLformMSIProperties = @"
+[xml]$XAMLformFileHashProperties = @"
 <Window
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   Name="form1"
   Width="900"
-  Height="425"
+  Height="250"
   ResizeMode="NoResize"
-  Title="MSI Properties"
+  Title="Get File Hash Information"
   FontSize="12">
 
   <DockPanel>
@@ -231,7 +172,7 @@ Add-Type -AssemblyName System.Windows.Forms
       </MenuItem>
       <MenuItem Header="About">
         <MenuItem Name="MenuItem_GitHub"
-                  Header="GitHub - GetMSIInformation"/>
+                  Header="GitHub - GetFileHashInformation"/>
         <MenuItem Name="MenuItem_About"
                   Header="michaeltheadmin.com"/>
         <Separator/>
@@ -243,12 +184,6 @@ Add-Type -AssemblyName System.Windows.Forms
 
     <Grid>
       <Grid.RowDefinitions>
-        <RowDefinition Height="32"/>
-        <RowDefinition Height="32"/>
-        <RowDefinition Height="32"/>
-        <RowDefinition Height="32"/>
-        <RowDefinition Height="5"/>
-        <RowDefinition Height="32"/>
         <RowDefinition Height="32"/>
         <RowDefinition Height="32"/>
         <RowDefinition Height="32"/>
@@ -391,115 +326,7 @@ Add-Type -AssemblyName System.Windows.Forms
         Name="btn_Digest_Copy"
         Content="Copy"/>
 
-      <!-- Row Gridline -->
-      <!-- Row 4 -->
-      <Line
-        Grid.Row="4"
-        Grid.Column="0"
-        Grid.ColumnSpan="3"
-        X1="0"
-        Y1="0"
-        X2="1"
-        Y2="0"
-        Stroke="Black"
-        StrokeThickness="2"
-        Stretch="Uniform"/>
-
       <!-- Row -->
-      <Label
-        Grid.Row="5"
-        Grid.Column="0"
-        Name="lbl_ProductName"
-        Content="Product Name"/>
-      <TextBox
-        Grid.Row="5"
-        Grid.Column="1"
-        Name="txt_ProductName"/>
-      <Button
-        Grid.Row="5"
-        Grid.Column="2"
-        Name="btn_ProductName_Copy"
-        Content="Copy"/>
-
-      <!-- Row -->
-      <Label
-        Grid.Row="6"
-        Grid.Column="0"
-        Name="lbl_Manufacturer"
-        Content="Manufacturer"/>
-      <TextBox
-        Grid.Row="6"
-        Grid.Column="1"
-        Name="txt_Manufacture"
-        xml:space="preserve"/>
-      <Button
-        Grid.Row="6"
-        Grid.Column="2"
-        Name="btn_Manufacture_Copy"
-        Content="Copy"/>
-
-      <!-- Row -->
-      <Label
-        Grid.Row="7"
-        Grid.Column="0"
-        Name="lbl_ProductVersion"
-        Content="Product Version"/>
-      <TextBox
-        Grid.Row="7"
-        Grid.Column="1"
-        Name="txt_ProductVersion"
-        xml:space="preserve"/>
-      <Button
-        Grid.Row="7"
-        Grid.Column="2"
-        Name="btn_ProductVersion_Copy"
-        Content="Copy"/>
-
-      <!-- Row -->
-      <Label
-        Grid.Row="8"
-        Grid.Column="0"
-        Name="lbl_ProductCode"
-        Content="Product Code"/>
-      <TextBox
-        Grid.Row="8"
-        Grid.Column="1"
-        Name="txt_ProductCode"
-        xml:space="preserve"/>
-      <Button
-        Grid.Row="8"
-        Grid.Column="2"
-        Name="btn_ProductCode_Copy"
-        Content="Copy"/>
-
-      <!-- Row -->
-      <Label
-        Grid.Row="9"
-        Grid.Column="0"
-        Name="lbl_UpgradeCode"
-        Content="Upgrade Code"/>
-      <TextBox
-        Grid.Row="9"
-        Grid.Column="1"
-        Name="txt_UpgradeCode"
-        xml:space="preserve"/>
-      <Button
-        Grid.Row="9"
-        Grid.Column="3"
-        Name="btn_UpgradeCode_Copy"
-        Content="Copy"/>
-
-      <!-- Row -->
-      <Button
-        Grid.Row="10"
-        Grid.Column="0"
-        Name="btn_AllProperties"
-        Margin="5"
-        HorizontalAlignment="Stretch"
-        VerticalAlignment="Stretch"
-        Content="All Properties"
-        Width="Auto"
-        IsEnabled="False"/>
       <ListBox
         Grid.Row="10"
         Grid.Column="1"
@@ -514,7 +341,7 @@ Add-Type -AssemblyName System.Windows.Forms
         TabIndex="0">
         <ListBox.Items>
           <ListBoxItem>
-            <TextBlock Text="Drag and drop files here - *.msi"/>
+            <TextBlock Text="Drag and drop files here"/>
           </ListBoxItem>
         </ListBox.Items>
       </ListBox>
@@ -530,13 +357,13 @@ Add-Type -AssemblyName System.Windows.Forms
 "@
 
 # Create a new XML node reader for reading the XAML content
-$readerformMSIProperties = New-Object System.Xml.XmlNodeReader $XAMLformMSIProperties
+$readerformFileHashProperties = New-Object System.Xml.XmlNodeReader $XAMLformFileHashProperties
 
 # Load the XAML content into a WPF window object using the XAML reader
-[System.Windows.Window]$formMSIProperties = [Windows.Markup.XamlReader]::Load($readerformMSIProperties)
+[System.Windows.Window]$formFileHashProperties = [Windows.Markup.XamlReader]::Load($readerformFileHashProperties)
 
 # Create Variables for all the controls in the XAML form
-$XAMLformMSIProperties.SelectNodes("//*[@Name]") | ForEach-Object { Set-Variable -Name ($_.Name) -Value $formMSIProperties.FindName($_.Name) -Scope Global }
+$XAMLformFileHashProperties.SelectNodes("//*[@Name]") | ForEach-Object { Set-Variable -Name ($_.Name) -Value $formFileHashProperties.FindName($_.Name) -Scope Global }
 
 #############################################
 ############## Event Handlers ###############
@@ -544,7 +371,7 @@ $XAMLformMSIProperties.SelectNodes("//*[@Name]") | ForEach-Object { Set-Variable
 #region Event Handlers
 
 #### Form Load #####
-$formMSIProperties.Add_Loaded({
+$formFileHashProperties.Add_Loaded({
     # Check if the script is running as an administrator
     if (($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))) {
 
@@ -563,7 +390,7 @@ $formMSIProperties.Add_Loaded({
     }
 
     # Update Version Information
-    $formMSIProperties.Title = "MSI Properties - Version $($ScriptVersion)"
+    $formFileHashProperties.Title = "Get File Hash Information - Version $($ScriptVersion)"
     $MenuItem_Version.Header = "Version $($ScriptVersion)"
 
     # Check if the FilePath parameter is provided to script
@@ -585,14 +412,11 @@ $formMSIProperties.Add_Loaded({
         $lsbox_FilePath.FontSize = 16
       }
       else {
-        # Get the MSI file properties
-        $FileMSIInfo = Get-MsiProperties -Path $FilePath
-
-        # Get the File Hash Information
+       # Get the File Hash Information
         $HashInfo = Get-FileHashInformation -Path $FilePath
 
         # Populate the textboxes
-        Set-TextboxInformation -MSIPropertiesInfo $FileMSIInfo -FileHashInfo $HashInfo
+        Set-TextboxInformation -FileHashInfo $HashInfo
 
         # Enable the Copy buttons
         Enable-AllButtons
@@ -607,7 +431,6 @@ $formMSIProperties.Add_Loaded({
 #### Listbox Drag and Drop ####
 $lsbox_FilePath.Add_Drop({
     $filename = $_.Data.GetData([Windows.Forms.DataFormats]::FileDrop)
-    Write-Host "File Dropped: [$filename]"
     if ($filename) {
       # Check if $FilePath is locked
       if (Test-FileLock -Path "$($filename)") {
@@ -626,14 +449,11 @@ $lsbox_FilePath.Add_Drop({
         $lsbox_FilePath.FontSize = 16
       }
       else {
-        # Get the MSI file properties
-        $FileMSIInfo = Get-MsiProperties -Path $filename
-
         # Get the File Hash Information
         $HashInfo = Get-FileHashInformation -Path $filename
 
         # Populate the textboxes
-        Set-TextboxInformation -MSIPropertiesInfo $FileMSIInfo -FileHashInfo $HashInfo
+        Set-TextboxInformation -FileHashInfo $HashInfo
 
         # Enable the Copy buttons
         Enable-AllButtons
@@ -657,15 +477,8 @@ $lsbox_FilePath.Add_DragOver({
     # Check if the dragged data contains file drop data
     if ($_.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop)) {
       foreach ($File in $_.Data.GetData([Windows.Forms.DataFormats]::FileDrop)) {
-        # Check if the file is an MSI file
-        if (([System.IO.Path]::GetExtension($File)) -eq ".msi") {
-          # Set the drag effect to Copy if the file is an MSI file
-          $_.Effects = [System.Windows.DragDropEffects]::Copy
-        }
-        else {
-          # Set the drag effect to None if the file is not an MSI file
-          $_.Effects = [System.Windows.DragDropEffects]::None
-        }
+        # Set the drag effect to Copy
+        $_.Effects = [System.Windows.DragDropEffects]::Copy
       }
     }
   })
@@ -677,8 +490,8 @@ $MenuItem_Install.add_Click({
     $SaveAsScriptName = $ScriptName
 
     # Create a new directory in the LOCALAPPDATA folder
-    Write-Host "Creating GetMSIInformation folder in LOCALAPPDATA folder"
-    $DestinationFolderPath = "$env:LOCALAPPDATA\GetMSIInformation"
+    Write-Host "Creating $([System.IO.Path]::GetFileNameWithoutExtension($ScriptName)) folder in LOCALAPPDATA folder"
+    $DestinationFolderPath = "$env:LOCALAPPDATA\$([System.IO.Path]::GetFileNameWithoutExtension($ScriptName))"
     if (-not (Test-Path $DestinationFolderPath)) {
       $DestinationFolder = New-Item -ItemType Directory -Path $DestinationFolderPath -ErrorAction SilentlyContinue
     }
@@ -689,13 +502,13 @@ $MenuItem_Install.add_Click({
     # Check if the script is being Invoked from the Internet
     if ($PSCommandPath -ne "") {
       # Copy the script to the new directory
-      Write-Host "Copying Script to GetMSIInfo Folder"
+      Write-Host "Copying Script to $([System.IO.Path]::GetFileNameWithoutExtension($ScriptName)) Folder"
       Copy-Item "$PSScriptRoot\$([System.IO.Path]::GetFileName($PSCommandPath))" -Destination "$($DestinationFolder.FullName)\$($SaveAsScriptName)" -ErrorAction SilentlyContinue
     }
     else {
       Write-Host "PSCommandPath is not available."
       # Script URL
-      $ScriptURL = "https://raw.githubusercontent.com/MichaelEscamilla/GetMSIInformation/main/GetMSIInformation.ps1"
+      $ScriptURL = "https://raw.githubusercontent.com/MichaelEscamilla/GetFileHashInformation/main/GetFileHashInformation.ps1"
       Write-Host "Downloading the script from URL: [$ScriptURL]"
       try {
         Invoke-WebRequest -Uri $ScriptURL -OutFile "$($DestinationFolder.FullName)\$($SaveAsScriptName)" -ErrorAction Stop
@@ -709,34 +522,34 @@ $MenuItem_Install.add_Click({
     # Reg2CI (c) 2020 by Roger Zander
     # https://github.com/asjimene/GetMSIInfo/blob/master/GetMSIInfo.ps1
 
-    # Check if the registry path for .msi file associations exists, if not, create it.
-    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\SystemFileAssociations\.msi") -ne $true) {
-      New-Item "HKCU:\Software\Classes\SystemFileAssociations\.msi" -Force -ErrorAction SilentlyContinue 
+    # Check if the registry path for * file associations exists, if not, create it.
+    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\*") -ne $true) {
+      New-Item "HKCU:\Software\Classes\*" -Force -ErrorAction SilentlyContinue 
     }
 
-    # Check if the 'shell' subkey exists under the .msi file associations, if not, create it.
-    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell") -ne $true) {
-      New-Item "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell" -Force -ErrorAction SilentlyContinue 
+    # Check if the 'shell' subkey exists under the * file associations, if not, create it.
+    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\*\shell") -ne $true) {
+      New-Item "HKCU:\Software\Classes\*\shell" -Force -ErrorAction SilentlyContinue 
     }
 
-    # Check if the 'Get MSI Information' subkey exists under 'shell', if not, create it.
-    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell\$RightClickMenuName") -ne $true) {
-      New-Item "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell\$RightClickMenuName" -Force -ErrorAction SilentlyContinue 
+    # Check if the 'Get File Hash Information' subkey exists under 'shell', if not, create it.
+    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\*\shell\$RightClickMenuName") -ne $true) {
+      New-Item "HKCU:\Software\Classes\*\shell\$RightClickMenuName" -Force -ErrorAction SilentlyContinue 
     }
 
-    # Set the 'icon' value under 'Get MSI Information' to a powershell.exe icon
-    New-ItemProperty -LiteralPath "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell\$RightClickMenuName" -Name 'icon' -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force -ErrorAction SilentlyContinue
+    # Set the 'icon' value under 'Get File Hash Information' to a powershell.exe icon
+    New-ItemProperty -LiteralPath "HKCU:\Software\Classes\*\shell\$RightClickMenuName" -Name 'icon' -Value "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force -ErrorAction SilentlyContinue
 
-    # Check if the 'command' subkey exists under 'Get MSI Information', if not, create it.
-    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell\$RightClickMenuName\command") -ne $true) {
-      New-Item "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell\$RightClickMenuName\command" -Force -ErrorAction SilentlyContinue 
+    # Check if the 'command' subkey exists under 'Get File Hash Information', if not, create it.
+    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\*\shell\$RightClickMenuName\command") -ne $true) {
+      New-Item "HKCU:\Software\Classes\*\shell\$RightClickMenuName\command" -Force -ErrorAction SilentlyContinue 
     }
 
-    # Set the default value of the 'Get MSI Information' key to "Get MSI Information".
-    New-ItemProperty -LiteralPath "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell\$RightClickMenuName" -Name '(default)' -Value "$RightClickMenuName" -PropertyType String -Force -ea SilentlyContinue;
+    # Set the default value of the 'Get File Hash Information' key to "Get File Hash Information".
+    New-ItemProperty -LiteralPath "HKCU:\Software\Classes\*\shell\$RightClickMenuName" -Name '(default)' -Value "$RightClickMenuName" -PropertyType String -Force -ea SilentlyContinue;
 
-    # Set the default value of the 'command' key to execute a PowerShell script with the .msi file as an argument.
-    New-ItemProperty -LiteralPath "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell\$RightClickMenuName\command" -Name '(default)' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"$($DestinationFolder.FullName)\$($SaveAsScriptName)`" -FilePath '%1'" -PropertyType String -Force -ErrorAction SilentlyContinue;
+    # Set the default value of the 'command' key to execute a PowerShell script with the * file as an argument.
+    New-ItemProperty -LiteralPath "HKCU:\Software\Classes\*\shell\$RightClickMenuName\command" -Name '(default)' -Value "C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"$($DestinationFolder.FullName)\$($SaveAsScriptName)`" -FilePath '%1'" -PropertyType String -Force -ErrorAction SilentlyContinue;
     Write-Host "Installation Complete"
   })
 
@@ -745,16 +558,16 @@ $MenuItem_Uninstall.add_Click({
     Write-Output "Removing Script from LOCALAPPDATA"
 
     # Remove the script folder from the LOCALAPPDATA folder
-    Remove-item "$env:LOCALAPPDATA\GetMSIInformation" -Force -Recurse -ErrorAction SilentlyContinue
+    Remove-item "$env:LOCALAPPDATA\$([System.IO.Path]::GetFileNameWithoutExtension($ScriptName))" -Force -Recurse -ErrorAction SilentlyContinue
 
     # Reg2CI (c) 2020 by Roger Zander
     # https://github.com/asjimene/GetMSIInfo/blob/master/GetMSIInfo.ps1
 
 
     Write-Output "Cleaning Up Registry"
-    # Remove the 'Get MSI Information' registry key if it exists
-    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell\$RightClickMenuName") -eq $true) { 
-      Remove-Item "HKCU:\Software\Classes\SystemFileAssociations\.msi\shell\$RightClickMenuName" -force -Recurse -ea SilentlyContinue 
+    # Remove the 'Get FIle Hash Information' registry key if it exists
+    if ((Test-Path -LiteralPath "HKCU:\Software\Classes\*\shell\$RightClickMenuName") -eq $true) { 
+      Remove-Item "HKCU:\Software\Classes\*\shell\$RightClickMenuName" -force -Recurse -ea SilentlyContinue 
     }
 
     Write-Output "Uninstallation Complete!"
@@ -762,7 +575,7 @@ $MenuItem_Uninstall.add_Click({
 
 $MenuItem_GitHub.add_Click({
     # Open Github Project Page
-    Start-Process "https://github.com/MichaelEscamilla/GetMSIInformation"
+    Start-Process "https://github.com/MichaelEscamilla/GetFileHashInformation"
   })
 
 $MenuItem_About.add_Click({
@@ -771,10 +584,6 @@ $MenuItem_About.add_Click({
   })
 
 #### Button Handlers ####
-$btn_AllProperties.add_Click({
-    $SelectedProperty = Get-MsiProperties -Path $lsbox_FilePath.Items[0] | Out-GridView -Title "MSI Database Properties for $($lsbox_FilePath.Items[0])" -OutputMode Single
-    $SelectedProperty.Value | Set-Clipboard
-  })
 
 $Button_Copy_Handler = {
   # Get the button name
@@ -817,5 +626,5 @@ foreach ($Button in $Buttons) {
 #endregion Event Handlers
 
 #Show the WPF Window
-$formMSIProperties.WindowStartupLocation = "CenterScreen"
-$formMSIProperties.ShowDialog() | Out-Null
+$formFileHashProperties.WindowStartupLocation = "CenterScreen"
+$formFileHashProperties.ShowDialog() | Out-Null
