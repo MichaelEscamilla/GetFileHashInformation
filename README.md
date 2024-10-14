@@ -7,11 +7,11 @@ Drag and Drop Application to view File Hash Information<br>
 
 ## Right-Click Context Menu Option
 Right-Click Context Menu Option to Lauch the app and automatically load the information<br>
-![Right-Click Context Menu](/Images/Application_GFHI_ContextMenu_Install)
+![Right-Click Context Menu](/Images/Application_GFHI_ContextMenu_Install.png)
 
 ### Install the Context Menu Option
 Install the Context Menu Option from the menu bar<br>
-![Install Context Menu](/Images/Application_GFHI_ContextMenu_Uninstall)
+![Install Context Menu](/Images/Application_GFHI_ContextMenu_Uninstall.png)
 
 ### Uninstall the Context Menu Option
 Uninstall the Context Menu Option from the menu bar<br>
