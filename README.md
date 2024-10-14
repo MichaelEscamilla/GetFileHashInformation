@@ -5,6 +5,15 @@ Drag and Drop Application to view File Hash Information<br>
 ## Example after loading a file
  ![ExampleLoad](/Images/Application_GFHI_Example00.png)
 
+ ## Quick Access
+Quickly access the app by invoking the URL [filehashapp.michaeltheadmin.com](https://filehashapp.michaeltheadmin.com)
+
+### Invoke-Expression
+```powershell
+iex (irm filehashapp.michaeltheadmin.com)
+```
+ ![Invoke MSI Application](/Images/Application_GFHI_Example_Run.png)
+
 ## Right-Click Context Menu Option
 Right-Click Context Menu Option to Lauch the app and automatically load the information<br>
 ![Right-Click Context Menu](/Images/Application_GFHI_ContextMenu_Example.png)
