@@ -1,3 +1,37 @@
+<#PSScriptInfo
+
+.VERSION 2024.12.8.0
+
+.GUID 315f846c-6268-44ac-b2f1-fd3dce09e75b
+
+.AUTHOR Michael Escamilla
+
+.COMPANYNAME
+
+.COPYRIGHT
+
+.TAGS
+
+.LICENSEURI
+
+.PROJECTURI https://github.com/MichaelEscamilla/GetFileHashInformation
+
+.ICONURI
+
+.EXTERNALMODULEDEPENDENCIES 
+
+.REQUIREDSCRIPTS
+
+.EXTERNALSCRIPTDEPENDENCIES
+
+.RELEASENOTES
+2024-10.13.0  - Initial release of the GetFileHashInformation.ps1 script.
+2024.12.8.0   - Formatted Script for Publishing to PowerShell Gallery
+
+.PRIVATEDATA
+
+#> 
+
 <#
 .SYNOPSIS
 This script provides a graphical user interface (GUI) for viewing and copying File Hash Information of files.
@@ -12,11 +46,7 @@ Additionally, the script includes options to install and uninstall a context men
 Optional parameter to specify the path of the file to automatically load the information for.
 
 .NOTES
-Author: Michael Escamilla
-Date: 10-13-2024
 
-Version History:
-2024-10.13.0- Initial release of the GetFileHashInformation.ps1 script.
 #>
 
 param (
@@ -30,7 +60,7 @@ param (
 # Script Name
 $Global:ScriptName = "GetFileHashInformation.ps1"
 # Script Version
-[System.Version]$Global:ScriptVersion = "2024.10.13.0"
+[System.Version]$Global:ScriptVersion = "2024.12.8.0"
 # Right-Click Menu Name
 $Global:RightClickMenuName = "Get File Hash Information"
 # Get the Security Principal
@@ -584,7 +614,6 @@ $MenuItem_About.add_Click({
   })
 
 #### Button Handlers ####
-
 $Button_Copy_Handler = {
   # Get the button name
   $ButtonName = $_.Source.Name
